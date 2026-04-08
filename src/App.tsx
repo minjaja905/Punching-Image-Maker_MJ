@@ -368,11 +368,15 @@ export default function App() {
     <div className="min-h-screen bg-[#fafafa] font-sans text-slate-900 flex flex-col md:flex-row overflow-hidden">
       {/* Sidebar / Controls */}
       <div className="w-full md:w-80 bg-white border-r border-slate-200 p-6 flex flex-col gap-8 overflow-y-auto max-h-screen shadow-sm z-20">
-        <header className="flex items-center gap-2">
-          <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase">
-            펀칭이미지 <span className="text-blue-600">만들기</span>
+        <header className="flex flex-col gap-1">
+          <h1 className="text-xl font-black tracking-tighter text-slate-900 leading-none">
+            PUNCHING IMAGE <br />
+            <span className="text-teal-500">MAKER</span>
           </h1>
-          <span className="bg-blue-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">MJ</span>
+          <div className="flex items-center gap-1.5">
+            <Star className="w-3 h-3 fill-teal-400 text-teal-400" />
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">by MJ</span>
+          </div>
         </header>
 
         {/* Image Upload */}
