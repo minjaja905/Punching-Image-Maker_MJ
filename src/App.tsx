@@ -185,21 +185,22 @@ export default function App() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        setImage(result);
-        
-        // Get aspect ratio
-        const img = new Image();
-        img.onload = () => {
-          setImageAspectRatio(img.width / img.height);
-        };
-        img.src = result;
-        
+      // Revoke old URL if exists
+      if (image && image.startsWith('blob:')) {
+        URL.revokeObjectURL(image);
+      }
+
+      // Use URL.createObjectURL for better mobile performance
+      const objectUrl = URL.createObjectURL(file);
+      setImage(objectUrl);
+      
+      // Get aspect ratio
+      const img = new Image();
+      img.onload = () => {
+        setImageAspectRatio(img.width / img.height);
         generateInitialShapes();
       };
-      reader.readAsDataURL(file);
+      img.src = objectUrl;
     }
   };
 
@@ -365,9 +366,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa] font-sans text-slate-900 flex flex-col md:flex-row overflow-hidden">
+    <div className="min-h-screen bg-[#fafafa] font-sans text-slate-900 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
       {/* Sidebar / Controls */}
-      <div className="w-full md:w-80 bg-white border-r border-slate-200 p-6 flex flex-col gap-8 overflow-y-auto max-h-screen shadow-sm z-20">
+      <div className="w-full md:w-80 bg-white border-b md:border-b-0 md:border-r border-slate-200 p-6 flex flex-col gap-8 md:overflow-y-auto md:max-h-screen shadow-sm z-20 order-2 md:order-1">
         <header className="flex flex-col gap-1">
           <h1 className="text-xl font-black tracking-tighter text-slate-900 leading-none">
             PUNCHING IMAGE <br />
@@ -630,7 +631,7 @@ export default function App() {
       </div>
 
       {/* Main Preview Area */}
-      <main className="flex-1 bg-slate-100 p-4 md:p-8 flex items-center justify-center overflow-hidden relative">
+      <main className="flex-1 bg-slate-100 p-4 md:p-8 flex items-center justify-center relative min-h-[400px] md:min-h-0 order-1 md:order-2">
         {!image ? (
           <div className="text-center space-y-4 animate-pulse">
             <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto shadow-xl">
@@ -642,7 +643,7 @@ export default function App() {
           <div 
             style={{ 
               aspectRatio: layout === 'vertical' ? `${imageAspectRatio * 2}` : `${imageAspectRatio / 2}`,
-              maxHeight: '80vh',
+              maxHeight: '70vh',
               maxWidth: '100%'
             }}
             className={`bg-white shadow-2xl rounded-2xl overflow-hidden flex ${
@@ -784,31 +785,31 @@ export default function App() {
 
         {/* Floating Toolbar */}
         {image && (
-          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md border border-slate-200 shadow-2xl rounded-2xl p-2 flex gap-1 z-30">
+          <div className="absolute bottom-6 md:bottom-12 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md border border-slate-200 shadow-2xl rounded-2xl p-1 md:p-2 flex gap-0.5 md:gap-1 z-30 w-[95%] md:w-auto justify-center">
             <button 
               onClick={() => exportImage('download')}
               disabled={isSaving}
-              className="p-3 hover:bg-slate-100 rounded-xl transition-all text-slate-600 flex items-center gap-2 active:scale-95 disabled:opacity-50"
+              className="p-2 md:p-3 hover:bg-slate-100 rounded-xl transition-all text-slate-600 flex items-center gap-1 md:gap-2 active:scale-95 disabled:opacity-50"
             >
-              {isSaving ? <Check className="w-5 h-5 text-green-500" /> : <Download className="w-5 h-5" />}
-              <span className="text-xs font-bold">{isSaving ? '저장됨' : '이미지 저장'}</span>
+              {isSaving ? <Check className="w-4 h-4 md:w-5 md:h-5 text-green-500" /> : <Download className="w-4 h-4 md:w-5 md:h-5" />}
+              <span className="text-[10px] md:text-xs font-bold">{isSaving ? '저장됨' : '저장'}</span>
             </button>
-            <div className="w-px h-8 bg-slate-200 my-auto mx-1" />
+            <div className="w-px h-6 md:h-8 bg-slate-200 my-auto mx-0.5 md:mx-1" />
             <button 
               onClick={() => exportImage('clipboard')}
               disabled={isCopying}
-              className="p-3 hover:bg-slate-100 rounded-xl transition-all text-slate-600 flex items-center gap-2 active:scale-95 disabled:opacity-50"
+              className="p-2 md:p-3 hover:bg-slate-100 rounded-xl transition-all text-slate-600 flex items-center gap-1 md:gap-2 active:scale-95 disabled:opacity-50"
             >
-              {isCopying ? <Check className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
-              <span className="text-xs font-bold">{isCopying ? '복사됨' : '클립보드 복사'}</span>
+              {isCopying ? <Check className="w-4 h-4 md:w-5 md:h-5 text-green-500" /> : <Copy className="w-4 h-4 md:w-5 md:h-5" />}
+              <span className="text-[10px] md:text-xs font-bold">{isCopying ? '복사됨' : '복사'}</span>
             </button>
-            <div className="w-px h-8 bg-slate-200 my-auto mx-1" />
+            <div className="w-px h-6 md:h-8 bg-slate-200 my-auto mx-0.5 md:mx-1" />
             <button 
               onClick={() => setShapes([])}
-              className="p-3 hover:bg-red-50 rounded-xl transition-all text-red-500 flex items-center gap-2 active:scale-95"
+              className="p-2 md:p-3 hover:bg-red-50 rounded-xl transition-all text-red-500 flex items-center gap-1 md:gap-2 active:scale-95"
             >
-              <Trash2 className="w-5 h-5" />
-              <span className="text-xs font-bold">전체 삭제</span>
+              <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
+              <span className="text-[10px] md:text-xs font-bold">삭제</span>
             </button>
           </div>
         )}
