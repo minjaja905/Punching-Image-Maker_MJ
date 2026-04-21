@@ -4,7 +4,6 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { motion } from 'motion/react';
 import { 
   Upload, 
   Heart, 
@@ -91,6 +90,7 @@ export default function App() {
   const [customEmoji, setCustomEmoji] = useState('✨');
   const [isCopying, setIsCopying] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const draggingId = useRef<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const panelARef = useRef<HTMLDivElement>(null);
@@ -219,6 +219,26 @@ export default function App() {
   const updateShapePos = (id: string, x: number, y: number) => {
     setShapes(prev => prev.map(s => s.id === id ? { ...s, x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) } : s));
   };
+
+  const handlePanelMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isEditMode || !draggingId.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    updateShapePos(draggingId.current, x, y);
+  };
+
+  const handlePanelTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isEditMode || !draggingId.current) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((touch.clientX - rect.left) / rect.width) * 100;
+    const y = ((touch.clientY - rect.top) / rect.height) * 100;
+    updateShapePos(draggingId.current, x, y);
+  };
+
+  const stopDrag = () => { draggingId.current = null; };
 
   const resetShapes = () => {
     generateInitialShapes();
@@ -651,50 +671,42 @@ export default function App() {
             }`}
           >
             {/* Panel A: Original Image + Colored Shapes */}
-            <div 
+            <div
               ref={panelARef}
               className={`relative overflow-hidden flex-1 ${
                 panelOrder === 'punch-first' ? 'order-2' : 'order-1'
               }`}
+              onMouseMove={handlePanelMouseMove}
+              onMouseUp={stopDrag}
+              onMouseLeave={stopDrag}
+              onTouchMove={handlePanelTouchMove}
+              onTouchEnd={stopDrag}
             >
               <img src={image} className="w-full h-full object-cover select-none pointer-events-none" alt="Original" />
               <div className="absolute inset-0">
                 {shapes.map(shape => (
-                  <motion.div
+                  <div
                     key={shape.id}
-                    drag={isEditMode}
-                    dragMomentum={false}
-                    onDrag={(e: any) => {
-                      const rect = panelARef.current?.getBoundingClientRect();
-                      if (rect) {
-                        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-                        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-                        if (clientX && clientY) {
-                          const newX = ((clientX - rect.left) / rect.width) * 100;
-                          const newY = ((clientY - rect.top) / rect.height) * 100;
-                          updateShapePos(shape.id, newX, newY);
-                        }
-                      }
-                    }}
+                    onMouseDown={() => { if (isEditMode) draggingId.current = shape.id; }}
+                    onTouchStart={() => { if (isEditMode) draggingId.current = shape.id; }}
                     style={{
                       position: 'absolute',
                       left: `${shape.x}%`,
                       top: `${shape.y}%`,
                       width: shape.size,
                       height: shape.size,
-                      x: '-50%',
-                      y: '-50%',
-                      rotate: shape.rotation,
+                      transform: `translate(-50%, -50%) rotate(${shape.rotation}deg)`,
                       cursor: isEditMode ? 'grab' : 'default',
                       zIndex: 10,
+                      userSelect: 'none',
                     }}
                   >
                     <svg viewBox="0 0 24 24" width="100%" height="100%" style={{ fill: punchColor }}>
                       {shape.type === 'custom' ? (
-                        <text 
-                          x="12" y="13" 
-                          fontSize="18" 
-                          textAnchor="middle" 
+                        <text
+                          x="12" y="13"
+                          fontSize="18"
+                          textAnchor="middle"
                           dominantBaseline="middle"
                           className="select-none"
                         >
@@ -704,47 +716,39 @@ export default function App() {
                         <path d={SVG_PATHS[shape.type]} />
                       )}
                     </svg>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             </div>
             {/* Panel B: Punched Background */}
-            <div 
+            <div
               ref={panelBRef}
               className={`relative overflow-hidden flex-1 ${
                 panelOrder === 'punch-first' ? 'order-1' : 'order-2'
               }`}
               style={{ backgroundColor: bgColor }}
+              onMouseMove={handlePanelMouseMove}
+              onMouseUp={stopDrag}
+              onMouseLeave={stopDrag}
+              onTouchMove={handlePanelTouchMove}
+              onTouchEnd={stopDrag}
             >
               <div className="absolute inset-0">
                 {shapes.map(shape => (
-                  <motion.div
+                  <div
                     key={shape.id}
-                    drag={isEditMode}
-                    dragMomentum={false}
-                    onDrag={(e: any) => {
-                      const rect = panelBRef.current?.getBoundingClientRect();
-                      if (rect) {
-                        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-                        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-                        if (clientX && clientY) {
-                          const newX = ((clientX - rect.left) / rect.width) * 100;
-                          const newY = ((clientY - rect.top) / rect.height) * 100;
-                          updateShapePos(shape.id, newX, newY);
-                        }
-                      }
-                    }}
+                    onMouseDown={() => { if (isEditMode) draggingId.current = shape.id; }}
+                    onTouchStart={() => { if (isEditMode) draggingId.current = shape.id; }}
                     style={{
                       position: 'absolute',
                       left: `${shape.x}%`,
                       top: `${shape.y}%`,
                       width: shape.size,
                       height: shape.size,
-                      x: '-50%',
-                      y: '-50%',
-                      rotate: shape.rotation,
+                      transform: `translate(-50%, -50%) rotate(${shape.rotation}deg)`,
                       cursor: isEditMode ? 'grab' : 'default',
                       zIndex: 10,
+                      userSelect: 'none',
                     }}
                   >
                     <svg width="100%" height="100%" viewBox="0 0 24 24" style={{ overflow: 'visible' }}>
@@ -776,7 +780,7 @@ export default function App() {
                         />
                       )}
                     </svg>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             </div>
