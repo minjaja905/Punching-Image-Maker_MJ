@@ -235,7 +235,7 @@ export default function App() {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      const gap = 20; // Gap between panels in export
+      const gap = 0;
       const isVert = layout === 'vertical';
       
       // Calculate total dimensions
