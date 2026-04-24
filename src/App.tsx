@@ -86,6 +86,7 @@ export default function App() {
   const [dispersion, setDispersion] = useState<'narrow' | 'medium' | 'wide'>('medium');
 
   const [shapeCount, setShapeCount] = useState(12);
+  const [punchShapeCount, setPunchShapeCount] = useState(12);
   const [isEditMode, setIsEditMode] = useState(false);
   const [customEmoji, setCustomEmoji] = useState('✨');
   const [isCopying, setIsCopying] = useState(false);
@@ -118,6 +119,7 @@ export default function App() {
       setShapes([...shapes, ...newShapes]);
     } else if (shapeCount < shapes.length) {
       setShapes(shapes.slice(0, shapeCount));
+      setPunchShapeCount(prev => Math.min(prev, shapeCount));
     }
   }, [shapeCount]);
 
@@ -309,7 +311,7 @@ export default function App() {
           ctx.fillStyle = bgColor;
           ctx.fillRect(0, 0, w, h);
           // Draw punched holes
-          shapes.forEach(s => {
+          shapes.slice(0, punchShapeCount).forEach(s => {
             ctx.save();
             ctx.translate((s.x / 100) * w, (s.y / 100) * h);
             ctx.rotate((s.rotation * Math.PI) / 180);
@@ -548,14 +550,29 @@ export default function App() {
             <label className="text-xs font-bold uppercase tracking-wider text-slate-500 flex justify-between">
               도형 개수 <span>{shapeCount}개</span>
             </label>
-            <input 
-              type="range" 
-              min="1" 
-              max="100" 
-              value={shapeCount} 
+            <input
+              type="range"
+              min="1"
+              max="100"
+              value={shapeCount}
               onChange={(e) => setShapeCount(parseInt(e.target.value))}
               className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-500 flex justify-between">
+              펀칭 개수 <span className="text-teal-500">{punchShapeCount}개</span>
+            </label>
+            <input
+              type="range"
+              min="1"
+              max={shapeCount}
+              value={punchShapeCount}
+              onChange={(e) => setPunchShapeCount(parseInt(e.target.value))}
+              className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-teal-500"
+            />
+            <p className="text-[10px] text-slate-400">펀칭 패널에만 적용 (이미지 쪽은 그대로)</p>
           </div>
 
           <div className="space-y-2">
@@ -734,7 +751,7 @@ export default function App() {
               onTouchEnd={stopDrag}
             >
               <div className="absolute inset-0">
-                {shapes.map(shape => (
+                {shapes.slice(0, punchShapeCount).map(shape => (
                   <div
                     key={shape.id}
                     onMouseDown={() => { if (isEditMode) draggingId.current = shape.id; }}
